@@ -1,3 +1,3 @@
 class Project < ActiveRecord::Base
-  paginates_per Rails.env.test? ? 2 : 20
+  paginates_per ENV.fetch('page_size')
 end
