@@ -9,8 +9,8 @@ class SingleProject
   def to_json(_options = {})
     {
       data: {
-         type: project.model_name.plural,
-         id: project.id,
+        type: project.model_name.plural,
+        id: project.id,
           attributes: {
             name: project.name,
             customer_name: project.customer_name,
