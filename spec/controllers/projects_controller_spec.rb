@@ -210,4 +210,229 @@ describe ProjectsController do
       end
     end
   end
+
+  describe '#create' do
+    context 'when empty api token is provided' do
+      it 'return 401 status unauthorized' do
+        allow(ENV).to receive(:fetch).with('api_key') { 'b5b98' }
+
+        post :create, api_key: '', format: :json
+
+        expect(response).to be_unauthorized
+        expect(response).to have_http_status(401)
+        json = JSON.parse(response.body)
+        expect(json).to include('title' => 'Unauthorized request')
+      end
+    end
+
+    context 'when invalid api token is provided' do
+      it 'return 401 status unauthorized' do
+        allow(ENV).to receive(:fetch).with('api_key') { 'b5b98' }
+
+        post :create, api_key: '0000', format: :json
+
+        expect(response).to be_unauthorized
+        expect(response).to have_http_status(401)
+        json = JSON.parse(response.body)
+        expect(json).to include('title' => 'Unauthorized request')
+      end
+    end
+
+    context 'when valid api token is provided' do
+
+      context 'when send all attributes for project' do
+        it 'creates a project and returns it' do
+          allow(ENV).to receive(:fetch).with('api_key') { 'b5b98' }
+          params = {
+            api_key: 'b5b98',
+            data:
+              {
+                type: 'projects',
+                attributes:
+                  {
+                    name: 'Project 1',
+                    customer_name: 'Customer 1',
+                    budget: 22.0,
+                    technologies: %w[technology1 technology2]
+                  }
+              }
+          }
+
+          post :create, params, format: :json
+
+          expect(response).to have_http_status(201)
+          json = JSON.parse(response.body)
+
+          expect(json).to include(
+            'data' => include(
+              'type' => 'projects',
+              'attributes' => include(
+                'name' => 'Project 1',
+                'customer_name' => 'Customer 1',
+                'budget' => '22.0',
+                'technologies' => "[\"technology1\", \"technology2\"]"))
+          )
+        end
+      end
+
+      context 'when send only required attributes' do
+        it 'creates a project and returns it' do
+          allow(ENV).to receive(:fetch).with('api_key') { 'b5b98' }
+          params = {
+            api_key: 'b5b98',
+            data:
+              {
+                type: 'projects',
+                attributes: {
+                  name: 'Project 1',
+                  budget: 22.0,
+                }
+              }
+          }
+
+          post :create, params, format: :json
+
+          expect(response).to have_http_status(201)
+          json = JSON.parse(response.body)
+
+          expect(json).to include(
+            'data' => include(
+              'type' => 'projects',
+              'attributes' => include(
+                'name' => 'Project 1',
+                'customer_name' => nil,
+                'budget' => '22.0',
+                'technologies' => "--- []\n"
+              )
+            )
+          )
+        end
+      end
+
+      context 'when send only name attribute' do
+        it 'returns validation errors' do
+          allow(ENV).to receive(:fetch).with('api_key') { 'b5b98' }
+          params ={
+            api_key: 'b5b98',
+            data:
+              {
+                type: 'projects',
+                attributes:
+                {
+                  name: 'Project 1'
+                }
+              }
+          }
+
+          post :create, params, format: :json
+
+          expect(response).to have_http_status(400)
+          json = JSON.parse(response.body)
+
+          expect(json).to include(
+            'errors' => match_array(
+              [
+                include('status' => '422', 'source' => include('pointer' => '/data/attributes/budget'), 'detail' => "can't be blank"),
+                include('status' => '422', 'source' => include('pointer' => '/data/attributes/budget'), 'detail' => 'is not a number')
+              ]
+            )
+          )
+        end
+      end
+
+      context 'when send attributes without required' do
+        it 'returns validation errors' do
+          allow(ENV).to receive(:fetch).with('api_key') { 'b5b98' }
+          params = {
+            api_key: 'b5b98',
+            data:
+              {
+                type: 'projects',
+                attributes:
+                  {
+                    customer_name: 'Customer 1',
+                    technologies: %w[technology1 technology2]
+                  }
+              }
+          }
+
+          post :create, params, format: :json
+
+          expect(response).to have_http_status(400)
+          json = JSON.parse(response.body)
+          expect(json).to include(
+            'errors' => match_array(
+              [
+                include('status' => '422', 'source' => include('pointer' => '/data/attributes/name'), 'detail' => "can't be blank"),
+                include('status' => '422', 'source' => include('pointer' => '/data/attributes/budget'), 'detail' => "can't be blank"),
+                include('status' => '422', 'source' => include('pointer' => '/data/attributes/budget'), 'detail' => 'is not a number')
+              ]
+            )
+          )
+        end
+      end
+
+      context 'when send all attributes and budget is 0' do
+        it 'returns validation errors' do
+          allow(ENV).to receive(:fetch).with('api_key') { 'b5b98' }
+          params = {
+            api_key: 'b5b98',
+            data:
+              {
+                type: 'projects',
+                attributes:
+                  {
+                    name: 'Project 1',
+                    customer_name: 'Customer 1',
+                    budget: 0,
+                    technologies: %w[technology1 technology2]
+                  }
+              }
+          }
+
+          post :create, params, format: :json
+
+          expect(response).to have_http_status(400)
+          json = JSON.parse(response.body)
+          expect(json).to include(
+            'errors' => match_array(
+              [include('status' => '422', 'source' => include('pointer' => '/data/attributes/budget'), 'detail' => 'must be greater than 0')]
+            )
+          )
+        end
+      end
+
+      context 'when send all params without name and budget is 0' do
+        it 'returns validation errors' do
+          allow(ENV).to receive(:fetch).with('api_key') { 'b5b98' }
+          params = {
+            api_key: 'b5b98',
+            data:
+              {
+                type: 'projects',
+                attributes:
+                  {
+                    customer_name: 'Customer 1',
+                    budget: 0,
+                    technologies: %w[technology1 technology2]
+                  }
+              }
+          }
+
+          post :create, params, format: :json
+
+          expect(response).to have_http_status(400)
+          json = JSON.parse(response.body)
+          expect(json).to include(
+            'errors' => match_array(
+              [
+                include('status' => '422', 'source' => include('pointer' => '/data/attributes/name'), 'detail' => "can't be blank"),
+                include('status' => '422', 'source' => include('pointer' => '/data/attributes/budget'), 'detail' => 'must be greater than 0')
+              ]
+            )
+          )
+        end
+      end
+    end
+  end
 end
