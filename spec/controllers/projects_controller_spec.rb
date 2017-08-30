@@ -1,5 +1,7 @@
 require 'rails_helper'
 
+require 'rails_helper'
+
 describe ProjectsController do
   describe '#index' do
     context 'when empty api token is provided' do
@@ -34,19 +36,26 @@ describe ProjectsController do
         allow(ENV).to receive(:fetch).with('page_size') { 2 }
         create(:project, name: 'Project 1', customer_name: 'Customer 1', budget: 22.0, technologies: %w[technology1 technology2])
         create(:project, name: 'Project 2', customer_name: 'Customer 2', budget: 23, technologies: %w[technology3 technology4])
-        project_first_hash = { 'name' => 'Project 1', 'customer_name' => 'Customer 1', 'budget' => '22.0', 'technologies' => "[\"technology1\", \"technology2\"]" }
-        project_second_hash = { 'name' => 'Project 2', 'customer_name' => 'Customer 2', 'budget' => '23.0', 'technologies' => "[\"technology3\", \"technology4\"]" }
-        links_hash = { 'self' => 'http://example.com/projects?page=1' }
 
         get :index, api_key: 'b5b98', format: :json
 
         expect(response.content_type).to eq('application/json')
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        projects = json['data']
-        links = json['links']
-        expect(projects).to include(project_first_hash, project_second_hash)
-        expect(links).to include(links_hash)
+        expect(json).to include(
+          'data' => match_array([
+            include(
+              'name' => 'Project 1',
+              'customer_name' => 'Customer 1',
+              'budget' => '22.0',
+              'technologies' => "[\"technology1\", \"technology2\"]"),
+            include(
+              'name' => 'Project 2',
+              'customer_name' => 'Customer 2',
+              'budget' => '23.0',
+              'technologies' => "[\"technology3\", \"technology4\"]")]),
+          'links' => include('self' => 'http://example.com/projects?page=1')
+        )
       end
 
       context 'when is 3 pages of results' do
@@ -59,20 +68,18 @@ describe ProjectsController do
             create(:project, name: 'Project 3')
             create(:project, name: 'Project 4')
             create(:project, name: 'Project 5')
-            project_first_hash = { 'name' => 'Project 1' }
-            project_second_hash = { 'name' => 'Project 2' }
-            link_hash = { 'self' => 'http://example.com/projects?page=1', 'next' => 'http://example.com/projects?page=2' }
 
             get :index, api_key: 'b5b98', format: :json
 
             expect(response.content_type).to eq('application/json')
             expect(response).to have_http_status(:ok)
             json = JSON.parse(response.body)
-            projects = json['data']
-            links = json['links']
-            expect(projects.first).to include(project_first_hash)
-            expect(projects.second).to include(project_second_hash)
-            expect(links).to include(link_hash)
+            expect(json).to include(
+              'data' => match_array([
+                include('name' => 'Project 1'),
+                include('name' => 'Project 2')]),
+              'links' => include('self' => 'http://example.com/projects?page=1', 'next' => 'http://example.com/projects?page=2')
+            )
           end
         end
 
@@ -85,20 +92,21 @@ describe ProjectsController do
             create(:project, name: 'Project 3')
             create(:project, name: 'Project 4')
             create(:project, name: 'Project 5')
-            project_first_hash = { 'name' => 'Project 3' }
-            project_second_hash = { 'name' => 'Project 4' }
-            link_hash = { 'self' => 'http://example.com/projects?page=2', 'next' => 'http://example.com/projects?page=3', 'previous' => 'http://example.com/projects?page=1' }
 
             get :index, api_key: 'b5b98', page: 2, format: :json
 
             expect(response.content_type).to eq('application/json')
             expect(response).to have_http_status(:ok)
             json = JSON.parse(response.body)
-            projects = json['data']
-            links = json['links']
-            expect(projects.first).to include(project_first_hash)
-            expect(projects.second).to include(project_second_hash)
-            expect(links).to include(link_hash)
+            expect(json).to include(
+              'data' => match_array([
+                include('name' => 'Project 3'),
+                include('name' => 'Project 4')]),
+              'links' => include(
+                'self' => 'http://example.com/projects?page=2',
+                'next' => 'http://example.com/projects?page=3',
+                'previous' => 'http://example.com/projects?page=1')
+            )
           end
         end
 
@@ -111,18 +119,19 @@ describe ProjectsController do
             create(:project, name: 'Project 3')
             create(:project, name: 'Project 4')
             create(:project, name: 'Project 5')
-            project_hash = { 'name' => 'Project 5' }
-            link_hash = { 'self' => 'http://example.com/projects?page=3', 'previous' => 'http://example.com/projects?page=2' }
 
             get :index, api_key: 'b5b96', page: 3, format: :json
 
             expect(response.content_type).to eq('application/json')
             expect(response).to have_http_status(:ok)
             json = JSON.parse(response.body)
-            projects = json['data']
-            links = json['links']
-            expect(links).to include(link_hash)
-            expect(projects.first).to include(project_hash)
+            expect(json).to include(
+              'data' => match_array([
+                include('name' => 'Project 5')]),
+              'links' => include(
+                'self' => 'http://example.com/projects?page=3',
+                'previous' => 'http://example.com/projects?page=2')
+            )
           end
         end
       end
