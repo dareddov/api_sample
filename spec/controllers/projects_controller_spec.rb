@@ -5,7 +5,7 @@ require 'rails_helper'
 describe ProjectsController do
   describe '#index' do
     context 'when empty api token is provided' do
-      it 'return 401 status unauthorized' do
+      it 'returns 401 status unauthorized' do
         allow(ENV).to receive(:fetch).with('api_key') { 'b5b98' }
 
         get :index, api_key: '', format: :json
@@ -18,7 +18,7 @@ describe ProjectsController do
     end
 
     context 'when invalid api token is provided' do
-      it 'return 401 status unauthorized' do
+      it 'returns 401 status unauthorized' do
         allow(ENV).to receive(:fetch).with('api_key') { 'b5b98' }
 
         get :index, api_key: '0000', format: :json
