@@ -129,33 +129,76 @@ describe ProjectsController do
     end
   end
 
-  # describe '#show' do
-  #
-  #   context 'when empty api token is provided' do
-  #     it 'return 401 status unauthorized' do
-  #       get :show, id: 1, api_key: '', format: :json
-  #
-  #       expect(response).to be_unauthorized
-  #     end
-  #   end
-  #
-  #   context 'when invalid api token is provided' do
-  #     it 'return 401 status unauthorized' do
-  #       get :show, id: 1, api_key: '0000', format: :json
-  #
-  #       expect(response).to be_unauthorized
-  #     end
-  #   end
-  #
-  #   context 'valid request with token' do
-  #     it 'return project' do
-  #       project = create(:project)
-  #       get :show, id: project.id, format: :json
-  #
-  #       expect(response.content_type).to eq('application/json')
-  #       expect(response).to have_http_status(:ok)
-  #       result = JSON.parse(response.body)
-  #     end
-  #   end
-  # end
+  describe '#show' do
+    context 'when empty api token is provided' do
+      it 'return 401 status unauthorized' do
+        allow(ENV).to receive(:fetch).with('api_key') { 'b5b96' }
+        valid_hash = { 'title' => 'Unauthorized request' }
+
+        get :show, id: 1, api_key: '', format: :json
+
+        expect(response).to be_unauthorized
+        expect(response).to have_http_status(401)
+        json = JSON.parse(response.body)
+        expect(json).to include(valid_hash)
+      end
+    end
+
+    context 'when invalid api token is provided' do
+      it 'return 401 status unauthorized' do
+        allow(ENV).to receive(:fetch).with('api_key') { 'b5b96' }
+        valid_hash = { 'title' => 'Unauthorized request' }
+
+        get :show, id: 1, api_key: '0000', format: :json
+
+        expect(response).to be_unauthorized
+        expect(response).to have_http_status(401)
+        json = JSON.parse(response.body)
+        expect(json).to include(valid_hash)
+      end
+    end
+
+    context 'valid request with token' do
+      context 'when project exist' do
+        it 'return project' do
+          allow(ENV).to receive(:fetch).with('api_key') { 'b5b96' }
+          project = create(:project, name: 'Project 1', customer_name: 'Customer 1', budget: 22.0, technologies: %w[technology1 technology2])
+          valid_hash = {
+            'data' => {
+              'type' => 'projects',
+              'id' => project.id,
+              'attributes' => {
+                'name' => 'Project 1',
+                'customer_name' => 'Customer 1',
+                'budget' => '22.0',
+                'technologies' => "[\"technology1\", \"technology2\"]"
+              }
+            },
+            'links' => { 'self' => "http://example.com/projects/#{project.id}" }
+          }
+
+          get :show, id: project.id, api_key: 'b5b96', format: :json
+
+          expect(response.content_type).to eq('application/json')
+          expect(response).to have_http_status(:ok)
+          json = JSON.parse(response.body)
+          expect(json).to include(valid_hash)
+        end
+      end
+
+      context 'when project not exist' do
+        it 'returns 404 not found' do
+          allow(ENV).to receive(:fetch).with('api_key') { 'b5b96' }
+          valid_hash = { 'title' => 'Not found', 'description' => 'The project was not found', 'status' => '404' }
+
+          get :show, id: 0, api_key: 'b5b96', format: :json
+
+          expect(response.content_type).to eq('application/json')
+          expect(response).to have_http_status(404)
+          json = JSON.parse(response.body)
+          expect(json).to include(valid_hash)
+        end
+      end
+    end
+  end
 end
