@@ -140,7 +140,7 @@ describe ProjectsController do
 
   describe '#show' do
     context 'when empty api token is provided' do
-      it 'return 401 status unauthorized' do
+      it 'returns 401 status unauthorized' do
         allow(ENV).to receive(:fetch).with('api_key') { 'b5b96' }
 
         get :show, id: 1, api_key: '', format: :json
@@ -153,7 +153,7 @@ describe ProjectsController do
     end
 
     context 'when invalid api token is provided' do
-      it 'return 401 status unauthorized' do
+      it 'returns 401 status unauthorized' do
         allow(ENV).to receive(:fetch).with('api_key') { 'b5b96' }
 
         get :show, id: 1, api_key: '0000', format: :json
@@ -167,7 +167,7 @@ describe ProjectsController do
 
     context 'valid request with token' do
       context 'when project exist' do
-        it 'return project' do
+        it 'returns project' do
           allow(ENV).to receive(:fetch).with('api_key') { 'b5b96' }
           project = create(:project, name: 'Project 1', customer_name: 'Customer 1', budget: 22.0, technologies: %w[technology1 technology2])
 
