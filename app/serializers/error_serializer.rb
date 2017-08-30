@@ -11,7 +11,7 @@ class ErrorSerializer
         errors.flat_map do |error_message|
           {
             status: '422',
-            source: {pointer: "/data/attributes/#{field}"},
+            source: { pointer: "/data/attributes/#{field}" },
             detail: error_message
             }
         end
