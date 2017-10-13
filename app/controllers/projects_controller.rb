@@ -1,8 +1,7 @@
 class ProjectsController < ApplicationController
   def index
-    projects = Project.page(params[:page])
-    projects_collection = ProjectsCollection.new(projects)
+    projects_collection = ProjectsCollection.new(params)
 
-    render json: projects_collection
+    render json: projects_collection, status: projects_collection.response_status
   end
 end
